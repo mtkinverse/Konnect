@@ -28,6 +28,7 @@ class List{
             tail->next = new Node<t>(data);
             tail = tail->next;
         }
+        std :: cout << "Inserted\n";
     }
 
     void Insert_Front(t data){
@@ -101,10 +102,12 @@ class List{
 
     }
 
+    Node<t>* GetHead() const { return head; }
+
     void Traverse() const {
         Node<t>* temp = head;
         while(temp != nullptr){
-            cout << temp->data << " ";
+            std :: cout << temp->data << " ";
             temp = temp->next;
         }
     }
