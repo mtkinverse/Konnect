@@ -5,6 +5,8 @@
 
 using namespace std;
 
+char blank[30] = "\0";
+
 template <class t>
 
 class Node{
@@ -239,8 +241,8 @@ class AVL{
     
     NodeT<t>* Insert(NodeT<t>* root,t data){
         if(root == nullptr) return new NodeT<t>(data);
-        else if (root->GetValue() < data) root->right = Insert(root->right,data);
-        else if (root->GetValue() > data) root->left = Insert(root->left,data);
+        else if (root->GetValue()->GetId() < data->GetId()) root->right = Insert(root->right,data);
+        else if (root->GetValue()->GetId() > data->GetId()) root->left = Insert(root->left,data);
         else return root;
 
         root->SetHeight(Height(root));
@@ -251,13 +253,13 @@ class AVL{
         int balance = left - right;
 
         if(balance < -1 || balance > 1){
-            if(balance < -1 && data > root->right->GetValue()) root = LeftRotation(root);
-            else if(balance < -1 && data < root->right->GetValue()){
+            if(balance < -1 && data->GetId() > root->right->GetValue()->GetId()) root = LeftRotation(root);
+            else if(balance < -1 && data->GetId() < root->right->GetValue()->GetId()){
                 root->right = RightRotation(root->right);
                 root = LeftRotation(root);
             }
-            else if( balance > 1 && data < root->left->GetValue()) root = RightRotation(root);
-            else if( balance > 1 && data > root->left->GetValue()){
+            else if( balance > 1 && data->GetId() < root->left->GetValue()->GetId()) root = RightRotation(root);
+            else if( balance > 1 && data->GetId() > root->left->GetValue()->GetId()){
                 root->left = LeftRotation(root->left);
                 root = RightRotation(root);
             }
@@ -274,8 +276,8 @@ class AVL{
 
     NodeT<t>* Delete(NodeT<t>* root,t data){
         if(root == nullptr) return nullptr;
-        else if(root->GetValue() < data) root->right = Delete(root->right,data);
-        else if(root->GetValue() > data) root->left = Delete(root->left,data);
+        else if(root->GetValue()->GetId() < data->GetId()) root->right = Delete(root->right,data);
+        else if(root->GetValue()->GetId() > data->GetId()) root->left = Delete(root->left,data);
         else{
             NodeT<t>* temp;
             if(root->left != nullptr && root->right != nullptr){
@@ -386,7 +388,6 @@ class AVL{
 class User{
 
     char name[30],password[30],email[30];
-    int id;
     float points;
 
     public:
@@ -403,7 +404,6 @@ class User{
         strcpy(name,"\0");
         strcpy(password,"\0");
         strcpy(email,"\0");
-        id = 0;
         points = 0;
     }
     
@@ -418,15 +418,16 @@ class User{
     }// we have to set a method for getting the ids/tokens (last leaved)
 
     bool operator == (const User& obj){
-        return (this->id == obj.id || this->email == obj.email);
+        return !strcmp(this->email,obj.email);
     }
 
     bool operator < ( const User& obj){
-        return this->id < obj.id;
+        cout << "User operator < called "<< endl;
+        return this->email < obj.email;
     }
 
     friend std::ostream& operator << (std::ostream& temp, User& obj){
-        std::cout << "User id : " << obj.id << "\nName : " << obj.name << "\nEmail : "<< obj.email << "\nPoints : "<< obj.points << std::endl << std::endl;
+        std::cout << "\nName : " << obj.name << "\nEmail : "<< obj.email << "\nPoints : "<< obj.points << std::endl << std::endl;
         return temp;
     }
 
@@ -526,7 +527,6 @@ class History{
     }
     
 };
-
 
 template <class t>
 class NodeG{
@@ -636,7 +636,7 @@ public:
         
         NodeG<t> *p1 = Find(id1) , *p2 = Find(id2);
 
-        if(p1 == nullptr || p2 == nullptr) {return};
+        if(p1 == nullptr || p2 == nullptr) return;
         
         p1->ConnectNode(p2);
         adjMatrix[p1->GetId()][p2->GetId()] = 1;
@@ -656,11 +656,12 @@ public:
         
         PrintAllNodes(temp->left);
         // cout << temp->GetValue()->GetData().GetName() << " : " << temp->GetValue()->GetList().Traverse();
-        cout << temp->GetValue()->GetData();
+        cout << *(temp->GetValue()->GetData());
+        cout << "\n id : "<< temp->GetValue()->GetId() << endl;
         cout << endl;
         Node<NodeG<t>*>* p = temp->GetValue()->GetList().GetHead();
         while(p){
-            cout << p->data->GetData().GetName() << " ";
+            cout << p->data->GetData()->GetName() << " ";
             p = p->next;
         }
         cout << endl;
@@ -670,28 +671,468 @@ public:
 
 };
 
+bool checkUser(const User& obj,int &n ) {
+
+	User temp;
+	ifstream file("UserData.bin", ios::binary );
+
+	while (file.read((char*)&temp, sizeof(temp))) {
+		n++;
+		if (temp == obj){
+			file.close();
+			return true;
+	    }
+        else cout << temp.GetEmail() << " " << obj.GetEmail() << endl;
+	}
+	file.close();
+	n = 0;
+	return false;
+}
+
+class Writer {
+
+public:
+
+	Writer(){}
+
+	// static void simulate();
+
+	static bool Login( User& obj, int &n ) {
+		
+			
+				ifstream file("UserData.bin", ios::binary);
+				file.seekg((n-1) * sizeof(User));
+				User temp;
+				file.read((char*)&temp, sizeof(temp));
+
+
+				if (strcmp((char*)temp.GetPassword(),(char*)obj.GetPassword()) == 0){
+					
+					obj = User((char*)temp.GetName(),(char*) temp.GetPassword(),(char*) temp.GetEmail());
+					
+				file.close();
+
+				    return true;	
+				}
+				else {
+					
+					cout << "\n >> Incorrect Password !\n"<< endl;
+				file.close();
+					return false;
+				}
+			
+	}
+
+	static bool SignUp(const User& obj) {
+
+
+		int num=0;
+
+		if(!checkUser(obj,num)){
+
+			ofstream file("UserData.bin", ios::binary | ios::app);
+			file.write((char*)&obj, sizeof(obj));
+			file.close();
+
+			return true;
+
+		}
+		else {
+			cout << "\nUser already exist please try again with different login id ! \n";
+			return false;
+		}
+
+	}
+
+	static bool deleteUser(const User& obj) {
+
+		bool deleted = false;
+		int n = 0;
+
+		if (checkUser(obj, n)) {
+
+			User tempobj;
+			int temp = 0;
+
+			ifstream file("UserData.bin", ios::binary);
+			file.seekg((n-1) * sizeof(User));
+			file.read((char*)&tempobj, sizeof(tempobj));
+
+			if (strcmp((char*)tempobj.GetPassword(),(char*)obj.GetPassword()) == 0);
+			else {
+				file.close();
+				return false;
+			}
+
+			fstream newFile("new.bin", ios::binary|ios::out);
+			
+			file.seekg(0);
+			while (file.read((char*)&tempobj, sizeof(User))) {
+
+				if (temp != (n - 1)) {
+					newFile.write((char*)&tempobj, sizeof(tempobj));
+				}
+				else{
+					deleted = true;
+					cout <<endl<<n - 1 << endl;
+			}
+					temp++;
+			}
+
+			file.close();
+			newFile.close();
+
+			remove("UserData.bin");
+			int val = rename("new.bin", "UserData.bin");
+			
+		}
+			return deleted;
+
+	}
+
+	static bool UpdateUser(const User& obj1, const User& obj2) {
+
+		if (deleteUser(obj1)) {
+
+			int n = 0;
+
+			fstream file("UserData.bin", ios::binary | ios::app);
+			file.write((char*)&obj2, sizeof(obj2));
+			file.close();
+
+			return true;
+		}
+
+		else return false;
+
+	}
+};
+
+class Simulate{
+
+    void PrintHeader(){
+        system("cls");
+        
+        cout << " |/  [ ] |\\ | |\\ | |`` |`` |`` ``|``                                                      https://github.com/mtkinverse/Konnect"<< endl;
+        cout << " |\\  [ ] | \\| | \\| |_  |_  |_|   |                                                                                             "<< endl;
+        cout << " Your conncetions are valueable\n";
+
+        cout << endl << endl;
+    }
+
+    public:
+    
+    void AskUser(){
+        PrintHeader();
+        cout << " ==> Select the options as per your desire\n\n> 1 - Login\n> 2 - Singup\n> 3 - exit\n\nEnter your choice : ";
+        int n;
+        cin >> n;
+
+        switch (n)
+        {
+        case 1: MakeItLogin();
+            break;
+        
+        case 2: MakeItSignup();
+            break;
+        case 3: exit(0);
+            break;
+        
+        default: cout << "\nKindly be precised while selecting the options !\n\n";
+        }
+    }
+
+    private:
+
+    void MakeItLogin() {
+
+	int n = 0;
+	User temp;
+	char temparr[2][30];
+
+	system("cls");
+PrintHeader();
+
+
+	cout << "\n -->> Welcome to the login panel\n\n Enter your login Identity : ";
+
+	fflush(stdin);
+	fflush(stdin);
+	fgets(blank, 30, stdin);
+	fgets(temparr[0], 30, stdin);
+	temp.SetEmail(temparr[0]);
+	fflush(stdin);
+
+	while(!checkUser(temp,n)){
+	
+		cout << "\t\t****The user name does not found !****\n\nPlease provide the user name / Login ID again\n Press any Key to continue or enter E to exit !\n";
+
+		char ch;
+		fflush(stdin);
+		cin >> ch;
+
+		if ( ch == 'E')exit(0);
+
+		fflush(stdin);
+		fflush(stdin);
+		fgets(blank, 30, stdin);
+
+		cout << "Enter a unique user name : ";
+
+		fgets(temparr[0], 30, stdin);
+		temp.SetEmail(temparr[0]);
+		fflush(stdin);
+	
+	}
+
+	cout << " Enter Your password : ";
+	
+	fflush(stdin);
+	fgets(temparr[1], 30, stdin);
+	fflush(stdin);
+	temp.SetPassword(temparr[1]);
+
+	int count = 3;
+	
+	while (!Writer::Login(temp, n) && count>0) {
+
+		cout << "\n\t**** Incorrect password ! ****\n\nPress any key to continue, or press 'E' to exit\n";
+
+		if (getc(stdin) == 'E')
+			exit(0);
+
+		cout << "Enter the password again ("<<count<<"): ";
+
+		fflush(stdin);
+		fgets(blank, 30, stdin);
+		fgets(temparr[1], 30, stdin);
+		fflush(stdin);
+		temp.SetPassword(temparr[1]);
+
+		count--;
+
+	}
+
+	if (count <= 0) { 
+
+		cout << "\n\nYou failed to login successfully !\n";
+		return;
+
+	}
+	else cout << "\n\n\t\t *** Login successful ! ***\n\n\t";
+
+	system("pause");
+ 
+}
+
+
+
+void MakeItSignup() {
+
+	int num= 0;
+
+	system("cls");
+PrintHeader();
+
+	User newUser;
+
+	char temps[3][30];
+
+	cout << "\n\n\t\t *** Welcome to the Signup portal !\n\n -> Please provide us information with which you want to signup\n -> keep remember this information to login anytime on vertex\n\n - Name : ";
+
+	fflush(stdin);
+    fgets(blank, 30, stdin);
+    fgets(temps[0], 30, stdin);
+	cout << " - Login ID : ";
+    fgets(temps[1], 30, stdin);
+	newUser.SetEmail(temps[1]);
+	fflush(stdin);
+
+	while (checkUser(newUser,num)) {
+
+		cout << "The user already exist kindly enter a different login ID\nPress any key to continue or press ESC to exit ";
+		if (getc(stdin) == 27)exit(0);
+
+		fflush(stdin);
+		fgets(temps[1], 30, stdin);
+		newUser.SetEmail(temps[1]);
+		fflush(stdin);
+
+	}
+
+	cout << " - Password : ";
+	fflush(stdin);
+    fgets(temps[2], 30, stdin);
+	fflush(stdin);
+	
+	newUser = User((char*)temps[0],(char*) temps[2],(char*) temps[1]);
+
+	if (Writer::SignUp(newUser)) {
+		cout << "\n\n\t\t *** Signup successful **\n\n";
+		system("pause");
+        
+	}
+	else cout << "An error occured while signing up !\n\n";
+
+
+}
+
+
+void UpdateAccount(const User& obj) {
+
+	User temp=obj;
+    char temparr[30];
+
+	system("cls");
+PrintHeader();
+	cout << "\n --)) What do you want to update \n\n 1 = Name\n 2 = LoginID\n 3 = Password\n\nEnter your choice : ";
+
+	int choice;
+	cin >> choice;
+
+	switch (choice)
+	{
+	case 1 : 
+		fgets(blank,30, stdin);
+		cout << "Enter the new name : ";
+		fgets(temparr,30, stdin);
+		temp.SetName((char*)temparr);
+	break;
+
+	case 2:
+
+		fgets(blank, 30, stdin);
+		cout << "Enter the new Login ID : ";
+		fgets(temparr, 30, stdin);
+		temp.SetEmail((char*)temparr);
+	break;
+
+	case 3 :
+
+		fgets(blank, 30, stdin);
+		cout << "Enter the new Password : ";
+		fgets(temparr, 30, stdin);
+		temp.SetPassword((char*)temparr);
+
+	break;
+
+	default:cout << "Not a valid Entry !\n";
+		system("pause");
+		break;
+	}
+
+	if (Writer::UpdateUser(obj, temp))cout << "\n\n\t\t ****** User Updated Successfully ****** \n\n\n -->> Kindly reload the account to observe the changes ! \n";
+	else cout << "\n -- An error occured ! \n";
+	system("pause");
+}
+
+
+};
+
 int main(){
 
-    Graph<User> g;
-    char name[] = "Muhammad Taha Khan", email[] = "mtkinverse@gmail.com" , password[] = "mtkinverse";
-    g.AddNode(User(name,password,email));
+    Simulate s;
+    s.AskUser();
 
-    strcpy(name,"Rao Abdul");
-    strcpy(password,"raopass");
-    strcpy(email,"raoMail@gmail.com");
+    // Graph<User*> g;
+    // char name[] = "Muhammad Taha Khan", email[] = "mtkinverse@gmail.com" , password[] = "mtkinverse";
+    // g.AddNode(new User(name,password,email));
 
-    g.AddNode(User(name,password,email));
+    // strcpy(name,"Rao Abdul");
+    // strcpy(password,"raopass");
+    // strcpy(email,"raoMail@gmail.com");
 
-    strcpy(name,"Hamdan Vohra");
-    strcpy(password,"HediPass");
-    strcpy(email,"VohraMail@gmail.com");
-    g.AddNode(User(name,password,email));
+    // g.AddNode(new User(name,password,email));
 
-    g.ConnectNodes(0,1);
-    g.ConnectNodes(0,2);
+    // strcpy(name,"Hamdan Vohra");
+    // strcpy(password,"HediPass");
+    // strcpy(email,"VohraMail@gmail.com");
+    // g.AddNode(new User(name,password,email));
+
+    // strcpy(name,"Ghulam Hussain");
+    // strcpy(password,"GulluPass");
+    // strcpy(email,"GolMal@gmail.com");
+    // g.AddNode(new User(name,password,email));
+
+    // g.ConnectNodes(0,1);
+    // g.ConnectNodes(0,2);
+    // g.ConnectNodes(3,2);
+    // g.ConnectNodes(3,1);
     
-    g.PrintAllNodes();
+    // g.PrintAllNodes();
+
+    // NodeG<User*>* ng = g.Find(0),*ng2 = g.Find(1),*ng3 = g.Find(2);
+    // Node<NodeG<User*>*> *temp = nullptr;
     
+    // if(ng == nullptr){
+    //     cout << "The user at id 0 not found !\n";
+    // }else{
+
+    //     cout << "\nThe user at id 0 is :\n";
+    //     cout << *(ng->GetData());
+    //     cout << endl;
+    //     cout << "The list of users connected to it :\n";
+    //     temp = ng->GetList().GetHead();
+
+    //     while(temp){
+    //         cout << temp->data->GetData()->GetName() << endl;
+    //         temp = temp->next;
+    //     }
+
+    // }
+
+    // if(ng2 == nullptr){
+    //     cout << "ng2 is NULL\n";
+    // }else{
+
+    // cout << "\nThe user at id 1 is :\n";
+    // cout << *(ng2->GetData());
+    // cout << endl;
+    // cout << "The list of users connected to it :\n";
+    // temp = ng2->GetList().GetHead();
+
+    // while(temp){
+    //     cout << temp->data->GetData()->GetName() << endl;
+    //     temp = temp->next;
+    // }
+
+    // }
+
+    // if(ng3 == nullptr){
+    //     cout << "ng3 is nullptr\n";
+    
+    // }
+    // else {
+
+    // cout << "\nThe user at id 2 is :\n";
+    // cout << *(ng3->GetData());
+    // cout << endl;
+    // cout << "The list of users connected to it :\n";
+    // temp = ng3->GetList().GetHead();
+
+    // while(temp){
+    //     cout << temp->data->GetData()->GetName() << endl;
+    //     temp = temp->next;
+    // }
+    
+    // }
+
+    // ng3 = g.Find(3);
+    // if(ng == nullptr){
+    //     cout << "The user at id 4 is null\n";
+    //     return 0;
+    // }
+    // cout << "\nThe user at id 3 is :\n";
+    // cout << *(ng3->GetData());
+    // cout << endl;
+    // cout << "The list of users connected to it :\n";
+    // temp = ng3->GetList().GetHead();
+
+    // while(temp){
+    //     cout << temp->data->GetData()->GetName() << endl;
+    //     temp = temp->next;
+    // }
+
     return 0;
     
 }
