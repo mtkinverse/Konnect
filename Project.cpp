@@ -682,7 +682,6 @@ bool checkUser(const User& obj,int &n ) {
 			file.close();
 			return true;
 	    }
-        else cout << temp.GetEmail() << " " << obj.GetEmail() << endl;
 	}
 	file.close();
 	n = 0;
@@ -813,8 +812,8 @@ class Simulate{
     void PrintHeader(){
         system("cls");
         
-        cout << " |/  [ ] |\\ | |\\ | |`` |`` |`` ``|``                                                      https://github.com/mtkinverse/Konnect"<< endl;
-        cout << " |\\  [ ] | \\| | \\| |_  |_  |_|   |                                                                                             "<< endl;
+        cout << " |/  [ ] |\\ | |\\ | |``|`` ``|``                                                      https://github.com/mtkinverse/Konnect"<< endl;
+        cout << " |\\  [ ] | \\| | \\| |_ |_|   |                                                                                             "<< endl;
         cout << " Your conncetions are valueable\n";
 
         cout << endl << endl;
@@ -922,10 +921,52 @@ PrintHeader();
 	else cout << "\n\n\t\t *** Login successful ! ***\n\n\t";
 
 	system("pause");
- 
+    
+    return ShowMenu(temp);
+
 }
 
+void ShowMenu(const User& user){
 
+    while(1){
+        
+        PrintHeader();
+
+        cout << " ==>> Welcome " << user.GetName() << " - The menu of Konnect offers you following functionalities. Please select the options very precisely\n\n > 1 - Check your feed\n > 2 - View your posts\n > 3 - Search a member\n > 4- Create post\n > 5 - Update Accoount\n > 6 - Delete Account\n > 7 - exit\n\nEnter your choice : ";
+
+        int choice;
+        cin >> choice;
+        
+        switch (choice)
+        {
+        case 1:
+            // ShowFeed();
+        break;
+        case 2:
+            // ShowFeed(); specific for the person
+        break;
+        case 3:
+            //Show member
+        break;
+        case 4:
+            // CreatePost();
+        break;
+        case 5:
+            UpdateAccount(user);
+        break;
+        case 6:
+            // CreatePost();
+        break;
+        case 7: exit(0); break;
+        default:
+            cout << "Kindly be precised !\n";
+            system("pause");
+            break;
+        }
+
+    }
+
+}
 
 void MakeItSignup() {
 
@@ -938,7 +979,7 @@ PrintHeader();
 
 	char temps[3][30];
 
-	cout << "\n\n\t\t *** Welcome to the Signup portal !\n\n -> Please provide us information with which you want to signup\n -> keep remember this information to login anytime on vertex\n\n - Name : ";
+	cout << "\n\n\t\t *** Welcome to the Signup portal !\n\n -> Please provide us information with which you want to signup\n -> keep remember this information to login anytime on Konnect\n\n - Name : ";
 
 	fflush(stdin);
     fgets(blank, 30, stdin);
@@ -974,6 +1015,7 @@ PrintHeader();
 	}
 	else cout << "An error occured while signing up !\n\n";
 
+    return ShowMenu(newUser);
 
 }
 
