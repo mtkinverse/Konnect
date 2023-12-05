@@ -7,6 +7,11 @@ using namespace std;
 
 char blank[30] = "\0";
 
+struct FriendProto{
+    char signature[30];
+    int id;
+};
+
 template <class t>
 
 class Node{
@@ -385,55 +390,6 @@ class AVL{
 
 };
 
-class User{
-
-    char name[30],password[30],email[30];
-    float points;
-
-    public:
-
-    const char* GetName() const { return this->name; }
-    const char* GetPassword() const { return this->password; }
-    const char* GetEmail() const { return this->email; }
-
-    void SetName(char* name){ strcpy(this->name,name); }
-    void SetPassword(char* password){ strcpy(this->password,password); }
-    void SetEmail(char* email){ strcpy(this->email,email); }
-
-    User(){
-        strcpy(name,"\0");
-        strcpy(password,"\0");
-        strcpy(email,"\0");
-        points = 0;
-    }
-    
-    User( char * name,char * password,char * email){
-
-        strcpy(this->name,name);
-        strcpy(this->password,password);
-        strcpy(this->email,email);
-        
-        this->points = 0;
-
-    }// we have to set a method for getting the ids/tokens (last leaved)
-
-    bool operator == (const User& obj){
-        return !strcmp(this->email,obj.email);
-    }
-
-    bool operator < ( const User& obj){
-        cout << "User operator < called "<< endl;
-        return this->email < obj.email;
-    }
-
-    friend std::ostream& operator << (std::ostream& temp, User& obj){
-        std::cout << "\nName : " << obj.name << "\nEmail : "<< obj.email << "\nPoints : "<< obj.points << std::endl << std::endl;
-        return temp;
-    }
-
-    
-    
-};
 
 class Post{
 
@@ -472,9 +428,10 @@ class History{
     public:
     History(){}
 
+    
     void UpdateHistory(const char* signature){
 
-        std::ifstream file("Posts.txt",std::ios::binary);
+        std::ifstream file("Posts.bin",std::ios::binary);
         
         while(file.peek() != EOF){
             Post temp;
@@ -491,22 +448,24 @@ class History{
     void AddPost(char* signature,char* text,char* timeStamp,bool type){
         
         Post temp(signature,text,timeStamp,type);
-        std::ofstream file("Posts.txt",std::ios::binary | std::ios::app);
+        std::ofstream file("Posts.bin",std::ios::binary | std::ios::app);
         file.write((char*)&temp,sizeof(temp));
         file.close();
+        UpdateHistory((const char*)temp.GetSignature());
+        posts.Insert_End(temp);
 
     }
     
     void AddPost(const Post& post){
 
-        std::ofstream file("Posts.txt",std::ios::binary | std::ios::app);
+        std::ofstream file("Posts.bin",std::ios::binary | std::ios::app);
         file.write((char*)&post,sizeof(post));
         file.close();
-        UpdateHistory((const char*)post.GetSignature());
+        posts.Insert_End(post);
 
     }
     
-    void PrintAllPosts(std::string name){
+    void PrintAllPosts(const char* name){
 
         Node<Post>* temp = posts.GetHead();
         while(temp != nullptr){
@@ -518,13 +477,74 @@ class History{
     
     bool isEmpty() const { return posts.GetHead() == nullptr; }
 
-    void GetTime(char arr[]){
+    void GetTime(char* arr){
 
         std::string time = __TIMESTAMP__;
         
-        for(int i=0;i<time.length() - 1;i++) arr[i] = time[i];
+        for(int i=0;i<time.length();i++) arr[i] = time[i];
 
     }
+    
+};
+
+class User{
+    char name[30],password[30],email[30];
+    History history;
+    float points;
+
+    public:
+
+    const char* GetName() const { return this->name; }
+    const char* GetPassword() const { return this->password; }
+    const char* GetEmail() const { return this->email; }
+    History& GetHistory() { return this->history; }
+    float GetPoints() { return this->points; }
+
+    void SetName(char* name){ strcpy(this->name,name); }
+    void SetPassword(char* password){ strcpy(this->password,password); }
+    void SetEmail(char* email){ strcpy(this->email,email); }
+    void SetPoints(float val){ this->points = val;}
+
+    User(){
+        strcpy(name,"\0");
+        strcpy(password,"\0");
+        strcpy(email,"\0");
+        points = 0;
+    }
+
+    User(const User& obj){
+        strcmp(name,obj.name);
+        strcmp(email,obj.email);
+        strcmp(password,obj.password);
+        this->history = obj.history;
+        this->points = obj.points;
+    }
+    
+    User( char * name,char * password,char * email){
+
+        strcpy(this->name,name);
+        strcpy(this->password,password);
+        strcpy(this->email,email);
+        
+        this->points = 0;
+
+    }// we have to set a method for getting the ids/tokens (last leaved)
+
+    bool operator == (const User& obj){
+        return !strcmp(this->email,obj.email);
+    }
+
+    bool operator < ( const User& obj){
+        cout << "User operator < called "<< endl;
+        return this->email < obj.email;
+    }
+
+    friend std::ostream& operator << (std::ostream& temp, User& obj){
+        std::cout << "\nName : " << obj.name << "Email : "<< obj.email << "Points : "<< obj.points << std::endl << std::endl;
+        return temp;
+    }
+
+    
     
 };
 
@@ -636,7 +656,13 @@ public:
         
         NodeG<t> *p1 = Find(id1) , *p2 = Find(id2);
 
-        if(p1 == nullptr || p2 == nullptr) return;
+        if(p1 == nullptr || p2 == nullptr) {
+            cout << id1 << " " << id2 << " Cannot be connected\n";
+            system("pause");
+            return;}
+        else if(id1 == id2){
+            cout << " -- Cannot connect the same user\n";
+        }
         
         p1->ConnectNode(p2);
         adjMatrix[p1->GetId()][p2->GetId()] = 1;
@@ -644,6 +670,8 @@ public:
         p2->ConnectNode(p1);
         adjMatrix[p2->GetId()][p1->GetId()] = 1;
 
+        // cout << "connecting "<<id1<<"and "<<id2<<" "<< p1->GetData()->GetName()<<" "<< p2->GetData()->GetName() << endl;
+        // system("pause");
     }
 
     void PrintAllNodes(){
@@ -667,6 +695,10 @@ public:
         cout << endl;
         PrintAllNodes(temp->right);
 
+    }
+
+    bool IsFriend(int id1,int id2){
+        return adjMatrix[id1][id2];
     }
 
 };
@@ -773,7 +805,6 @@ public:
 				}
 				else{
 					deleted = true;
-					cout <<endl<<n - 1 << endl;
 			}
 					temp++;
 			}
@@ -791,23 +822,54 @@ public:
 
 	static bool UpdateUser(const User& obj1, const User& obj2) {
 
-		if (deleteUser(obj1)) {
+		// if (deleteUser(obj1)) {
 
-			int n = 0;
+		// 	int n = 0;
 
-			fstream file("UserData.bin", ios::binary | ios::app);
-			file.write((char*)&obj2, sizeof(obj2));
-			file.close();
+		// 	fstream file("UserData.bin", ios::binary | ios::app);
+		// 	file.write((char*)&obj2, sizeof(obj2));
+		// 	file.close();
 
-			return true;
+		// 	return true;
+		// }
+
+        int n = 0;
+        bool stat = false;
+
+		User tempobj;
+        
+		ifstream file("UserData.bin", ios::binary);
+		fstream newFile("new.bin", ios::binary|ios::out);
+		
+		file.seekg(0);
+		while (file.read((char*)&tempobj, sizeof(User))) {
+
+			if (strcmp(obj1.GetEmail(),tempobj.GetEmail()) != 0) {
+				newFile.write((char*)&tempobj, sizeof(tempobj));
+			}
+			else{
+                stat = true;
+
+                newFile.write((char*)&obj2,sizeof(obj2));
+		    }
 		}
 
-		else return false;
+		file.close();
+		newFile.close();
+        
+		remove("UserData.bin");
+		int val = rename("new.bin", "UserData.bin");
+		
+
+		return stat;
 
 	}
 };
 
 class Simulate{
+
+    Graph<User*> graph;
+
 
     void PrintHeader(){
         system("cls");
@@ -819,26 +881,122 @@ class Simulate{
         cout << endl << endl;
     }
 
+    void InitGraph(){
+        ifstream file("UserData.bin",std::ios::binary);
+        User temp;
+
+        while(file.read((char*)&temp, sizeof(temp)))
+        {   
+            graph.AddNode(new User((char*)temp.GetName(),(char*)temp.GetPassword(),(char*)temp.GetEmail()));
+        }
+        file.close();
+
+        ifstream file2("Friends.bin",ios::binary);
+        struct FriendProto tempF;
+        int n;
+
+        while(file2.read((char*)&tempF,sizeof(tempF))){
+            n=0;
+            cout << tempF.signature << " " << tempF.id << " ";
+            temp.SetEmail(tempF.signature);
+            checkUser(temp,n);
+            graph.ConnectNodes(n-1,tempF.id);
+        }
+        
+        file2.close();
+        
+    }
+
+    void SearchMember(User& user){
+        PrintHeader();
+        User tempUser;
+        char temp[30];
+
+        cout << "==>> Enter the email of the user you want to search : ";
+        fflush(stdin);
+        fgets(blank,30,stdin);
+        fgets(temp,30,stdin);
+
+        tempUser.SetEmail(temp);
+        
+        int n = 0;
+        while(!checkUser(tempUser,n)){
+        n = 0;
+		cout << "\t\t****The user name does not found !****\n\nPlease provide the user name / Login ID again\n Press any Key to continue or enter E to exit !\n";
+
+		char ch;
+		fflush(stdin);
+		cin >> ch;
+
+		if ( ch == 'E') return;
+
+		fflush(stdin);
+		fflush(stdin);
+		fgets(blank, 30, stdin);
+
+		cout << "Enter a unique user name : ";
+
+		fgets(temp, 30, stdin);
+		tempUser.SetEmail(temp);
+		fflush(stdin);
+	
+	    }
+
+        ifstream file("UserData.bin",ios :: binary);
+        file.seekg((n-1) * sizeof(User));
+        file.read((char*)&tempUser,sizeof(tempUser));
+
+        cout << " -->> User Found !\n" << tempUser << endl;
+        
+        int id1 = n - 1;
+        n=0;
+        checkUser(user,n); // getting the id of the user
+        cout << " Let's check "<<n<<" "<<id1;
+
+        if(graph.IsFriend(n-1,id1))
+            cout << "\nYou are already friends !\n";        
+        else{
+            cout << "DO you want to be friends ? Enter 1 for yes or other for No\n\n";
+            int num;
+            // cin >> num;
+            num = getc(stdin);
+
+            if(num == '1') MakeFriend(n-1,id1);
+
+        }
+
+    }
+    
+    
+
     public:
     
+    Simulate(){
+        InitGraph();
+    }
+    
     void AskUser(){
-        PrintHeader();
-        cout << " ==> Select the options as per your desire\n\n> 1 - Login\n> 2 - Singup\n> 3 - exit\n\nEnter your choice : ";
-        int n;
-        cin >> n;
+        while(1){
 
-        switch (n)
-        {
-        case 1: MakeItLogin();
-            break;
-        
-        case 2: MakeItSignup();
-            break;
-        case 3: exit(0);
-            break;
-        
-        default: cout << "\nKindly be precised while selecting the options !\n\n";
+            PrintHeader();
+            cout << " ==> Select the options as per your desire\n\n> 1 - Login\n> 2 - Singup\n> 3 - exit\n\nEnter your choice : ";
+            int n;
+            cin >> n;
+
+            switch (n)
+            {
+                case 1: MakeItLogin();
+                    break;
+
+                case 2: MakeItSignup();
+                    break;
+                case 3: exit(0);
+                    break;
+
+                default: cout << "\nKindly be precised while selecting the options !\n\n";
+            }
         }
+
     }
 
     private:
@@ -922,11 +1080,15 @@ PrintHeader();
 
 	system("pause");
     
+    graph.AddNode(new User((char*)temp.GetName(),(char*)temp.GetPassword(),(char*)temp.GetEmail()));
     return ShowMenu(temp);
 
 }
+    
 
-void ShowMenu(const User& user){
+void ShowMenu(User& user){
+
+    user.GetHistory().UpdateHistory(user.GetEmail());
 
     while(1){
         
@@ -940,16 +1102,16 @@ void ShowMenu(const User& user){
         switch (choice)
         {
         case 1:
-            // ShowFeed();
+            ShowFeed(user);
         break;
         case 2:
-            // ShowFeed(); specific for the person
+            ShowProfile(user);
         break;
         case 3:
-            //Show member
+            SearchMember(user);
         break;
         case 4:
-            // CreatePost();
+            CreatePost(user);
         break;
         case 5:
             UpdateAccount(user);
@@ -957,15 +1119,88 @@ void ShowMenu(const User& user){
         case 6:
             // CreatePost();
         break;
-        case 7: exit(0); break;
+        case 7: return; break;
         default:
             cout << "Kindly be precised !\n";
             system("pause");
             break;
         }
 
+        system("pause");
+        system("pause");
+
     }
 
+}
+
+    void CreatePost(User& user){
+
+        PrintHeader();
+        Post temp;
+        temp.SetSignature((char*)user.GetEmail());
+        user.GetHistory().GetTime((char*)temp.GetTimeStamp());
+
+        cout << " > Enter the text you want to post : ";
+        cin.clear();
+        fgets(blank,30,stdin);
+        fgets((char*)temp.GetText(),500,stdin);
+
+        user.GetHistory().AddPost(temp);
+        user.SetPoints(user.GetPoints()+10);
+        
+    }
+
+    void MakeFriend(int id1,int id2){
+        graph.ConnectNodes(id1,id2);
+        
+        struct FriendProto temp;
+        NodeG<User*>* node = graph.Find(id1);
+        strcpy(temp.signature ,node->GetData()->GetEmail());
+        temp.id = id2;
+
+        ofstream file("Friends.bin",ios :: binary|ios::app);
+        file.write((char*)&temp,sizeof(temp));
+        file.close();  
+        
+    }
+
+void ShowFeed(User& user){
+    PrintHeader();
+
+    int n = 0;
+    checkUser(user,n);
+
+    Post post;
+    NodeG<User*>* ng = graph.Find(--n);    
+    Node<NodeG<User*>*> *temp, *head = ng->GetList().GetHead();
+    
+    ifstream file("Posts.bin",ios::binary);
+
+    while(file.read((char*)&post,sizeof(post))){
+        temp = head;
+        while(temp){
+            if(strcmp(temp->data->GetData()->GetEmail(),post.GetSignature()) == 0 || strcmp(user.GetEmail(),post.GetSignature()) == 0){
+                cout << "==\n" << post.GetSignature() << post.GetTimeStamp() << endl << post.GetText() << "==\n";
+                break;
+            }
+            temp = temp->next;
+        }
+    }
+    
+    file.close();
+
+    system("pause");
+
+}
+
+void ShowProfile(User& user){
+    PrintHeader();
+
+    cout << " - Showing the profile of the user\n";
+    cout << user << endl;
+    
+    user.GetHistory().PrintAllPosts(user.GetName());
+    
 }
 
 void MakeItSignup() {
@@ -1015,6 +1250,8 @@ PrintHeader();
 	}
 	else cout << "An error occured while signing up !\n\n";
 
+    graph.AddNode(new User((char*)newUser.GetName(),(char*)newUser.GetPassword(),(char*)newUser.GetEmail()));
+    
     return ShowMenu(newUser);
 
 }
@@ -1022,8 +1259,10 @@ PrintHeader();
 
 void UpdateAccount(const User& obj) {
 
-	User temp=obj;
+	User temp = User((char*)obj.GetName(),(char*)obj.GetPassword(),(char*)obj.GetEmail());
+
     char temparr[30];
+    bool EmailUpdated = false;
 
 	system("cls");
 PrintHeader();
@@ -1046,7 +1285,9 @@ PrintHeader();
 		fgets(blank, 30, stdin);
 		cout << "Enter the new Login ID : ";
 		fgets(temparr, 30, stdin);
+        EmailUpdated = true;
 		temp.SetEmail((char*)temparr);
+
 	break;
 
 	case 3 :
@@ -1063,11 +1304,97 @@ PrintHeader();
 		break;
 	}
 
-	if (Writer::UpdateUser(obj, temp))cout << "\n\n\t\t ****** User Updated Successfully ****** \n\n\n -->> Kindly reload the account to observe the changes ! \n";
+	if (Writer::UpdateUser(obj, temp)){
+
+        struct FriendProto frnd;
+
+        if(EmailUpdated){
+
+            ifstream file1("Friends.bin",ios::binary);
+            ofstream file2("temp.bin",ios::binary);
+
+            while(file1.read((char*)&frnd,sizeof(frnd))){
+                if(strcmp(obj.GetEmail(),frnd.signature) == 0) strcpy(frnd.signature,temp.GetEmail());
+                file2.write((char*)&frnd,sizeof(frnd));
+            }
+
+            
+            file2.close();
+            file1.close();
+
+            remove("Friends.bin");
+            int val = rename("temp.bin","Friends.bin");
+
+            Post post;
+            
+            ifstream fileP("Posts.bin",ios::binary);
+            ofstream fileP2("post.bin",ios :: binary);
+
+            while(fileP.read((char*)&post,sizeof(post))){
+                if(strcmp(post.GetSignature(),obj.GetEmail()) == 0) strcpy((char*)post.GetSignature(),temp.GetEmail());
+                fileP2.write((char*)&post,sizeof(post));
+            }
+            
+            fileP2.close();
+            fileP.close();
+
+            remove("Posts.bin");
+            val = rename("post.bin","Posts.bin");
+
+        }
+        
+        cout << "\n\n\t\t ****** User Updated Successfully ****** \n\n\n -->> Kindly reload the account to observe the changes ! \n";
+        
+    }
 	else cout << "\n -- An error occured ! \n";
 	system("pause");
 }
 
+bool deleteUser(const User& obj) {
+
+		bool deleted = false;
+		int n = 0;
+
+		if (checkUser(obj, n)) {
+
+			User tempobj;
+			int temp = 0;
+
+			ifstream file("UserData.bin", ios::binary);
+			file.seekg((n-1) * sizeof(User));
+			file.read((char*)&tempobj, sizeof(tempobj));
+
+			if (strcmp((char*)tempobj.GetPassword(),(char*)obj.GetPassword()) == 0);
+			else {
+				file.close();
+				return false;
+			}
+
+			fstream newFile("new.bin", ios::binary|ios::out);
+			
+			file.seekg(0);
+			while (file.read((char*)&tempobj, sizeof(User))) {
+
+				if (temp != (n - 1)) {
+					newFile.write((char*)&tempobj, sizeof(tempobj));
+				}
+				else{
+					deleted = true;
+					cout <<endl<<n - 1 << endl;
+			}
+					temp++;
+			}
+
+			file.close();
+			newFile.close();
+
+			remove("UserData.bin");
+			int val = rename("new.bin", "UserData.bin");
+			
+		}
+			return deleted;
+
+	}
 
 };
 
@@ -1076,106 +1403,6 @@ int main(){
     Simulate s;
     s.AskUser();
 
-    // Graph<User*> g;
-    // char name[] = "Muhammad Taha Khan", email[] = "mtkinverse@gmail.com" , password[] = "mtkinverse";
-    // g.AddNode(new User(name,password,email));
-
-    // strcpy(name,"Rao Abdul");
-    // strcpy(password,"raopass");
-    // strcpy(email,"raoMail@gmail.com");
-
-    // g.AddNode(new User(name,password,email));
-
-    // strcpy(name,"Hamdan Vohra");
-    // strcpy(password,"HediPass");
-    // strcpy(email,"VohraMail@gmail.com");
-    // g.AddNode(new User(name,password,email));
-
-    // strcpy(name,"Ghulam Hussain");
-    // strcpy(password,"GulluPass");
-    // strcpy(email,"GolMal@gmail.com");
-    // g.AddNode(new User(name,password,email));
-
-    // g.ConnectNodes(0,1);
-    // g.ConnectNodes(0,2);
-    // g.ConnectNodes(3,2);
-    // g.ConnectNodes(3,1);
-    
-    // g.PrintAllNodes();
-
-    // NodeG<User*>* ng = g.Find(0),*ng2 = g.Find(1),*ng3 = g.Find(2);
-    // Node<NodeG<User*>*> *temp = nullptr;
-    
-    // if(ng == nullptr){
-    //     cout << "The user at id 0 not found !\n";
-    // }else{
-
-    //     cout << "\nThe user at id 0 is :\n";
-    //     cout << *(ng->GetData());
-    //     cout << endl;
-    //     cout << "The list of users connected to it :\n";
-    //     temp = ng->GetList().GetHead();
-
-    //     while(temp){
-    //         cout << temp->data->GetData()->GetName() << endl;
-    //         temp = temp->next;
-    //     }
-
-    // }
-
-    // if(ng2 == nullptr){
-    //     cout << "ng2 is NULL\n";
-    // }else{
-
-    // cout << "\nThe user at id 1 is :\n";
-    // cout << *(ng2->GetData());
-    // cout << endl;
-    // cout << "The list of users connected to it :\n";
-    // temp = ng2->GetList().GetHead();
-
-    // while(temp){
-    //     cout << temp->data->GetData()->GetName() << endl;
-    //     temp = temp->next;
-    // }
-
-    // }
-
-    // if(ng3 == nullptr){
-    //     cout << "ng3 is nullptr\n";
-    
-    // }
-    // else {
-
-    // cout << "\nThe user at id 2 is :\n";
-    // cout << *(ng3->GetData());
-    // cout << endl;
-    // cout << "The list of users connected to it :\n";
-    // temp = ng3->GetList().GetHead();
-
-    // while(temp){
-    //     cout << temp->data->GetData()->GetName() << endl;
-    //     temp = temp->next;
-    // }
-    
-    // }
-
-    // ng3 = g.Find(3);
-    // if(ng == nullptr){
-    //     cout << "The user at id 4 is null\n";
-    //     return 0;
-    // }
-    // cout << "\nThe user at id 3 is :\n";
-    // cout << *(ng3->GetData());
-    // cout << endl;
-    // cout << "The list of users connected to it :\n";
-    // temp = ng3->GetList().GetHead();
-
-    // while(temp){
-    //     cout << temp->data->GetData()->GetName() << endl;
-    //     temp = temp->next;
-    // }
-
     return 0;
     
 }
-
