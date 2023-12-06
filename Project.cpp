@@ -1117,7 +1117,14 @@ void ShowMenu(User& user){
             UpdateAccount(user);
         break;
         case 6:
-            // CreatePost();
+
+            if(deleteUser(user)){
+                cout << "\n\t*** User Deleted ***\n\n -->> We value the time and support you provide us. Thanks for using this server\n\n";
+                system("pause");
+                Simulate();
+                return;
+            }else cout << "an error occured while deleting\n";
+            
         break;
         case 7: return; break;
         default:
@@ -1174,10 +1181,14 @@ void ShowFeed(User& user){
     NodeG<User*>* ng = graph.Find(--n);    
     Node<NodeG<User*>*> *temp, *head = ng->GetList().GetHead();
     
-    ifstream file("Posts.bin",ios::binary);
+    if(temp == nullptr) {user.GetHistory().PrintAllPosts(user.GetEmail()); system("pause"); return;}
 
+    ifstream file("Posts.bin",ios::binary);
     while(file.read((char*)&post,sizeof(post))){
+        
+
         temp = head;
+        
         while(temp){
             if(strcmp(temp->data->GetData()->GetEmail(),post.GetSignature()) == 0 || strcmp(user.GetEmail(),post.GetSignature()) == 0){
                 cout << "==\n" << post.GetSignature() << post.GetTimeStamp() << endl << post.GetText() << "==\n";
@@ -1226,10 +1237,13 @@ PrintHeader();
 
 	while (checkUser(newUser,num)) {
 
-		cout << "The user already exist kindly enter a different login ID\nPress any key to continue or press ESC to exit ";
-		if (getc(stdin) == 27)exit(0);
+		cout << "The user already exist kindly enter a different login ID\nPress any key to continue or press E to exit ";
+        char ch = getc(stdin);
+		if (ch == 'E') return;
 
 		fflush(stdin);
+		fgets(blank, 30, stdin);
+        cout << "Enter a unique user name : ";
 		fgets(temps[1], 30, stdin);
 		newUser.SetEmail(temps[1]);
 		fflush(stdin);
@@ -1364,23 +1378,16 @@ bool deleteUser(const User& obj) {
 			file.seekg((n-1) * sizeof(User));
 			file.read((char*)&tempobj, sizeof(tempobj));
 
-			if (strcmp((char*)tempobj.GetPassword(),(char*)obj.GetPassword()) == 0);
-			else {
-				file.close();
-				return false;
-			}
-
 			fstream newFile("new.bin", ios::binary|ios::out);
 			
 			file.seekg(0);
 			while (file.read((char*)&tempobj, sizeof(User))) {
 
-				if (temp != (n - 1)) {
+				if (strcmp(tempobj.GetEmail(),obj.GetEmail()) != 0) {
 					newFile.write((char*)&tempobj, sizeof(tempobj));
 				}
 				else{
 					deleted = true;
-					cout <<endl<<n - 1 << endl;
 			}
 					temp++;
 			}
@@ -1390,8 +1397,38 @@ bool deleteUser(const User& obj) {
 
 			remove("UserData.bin");
 			int val = rename("new.bin", "UserData.bin");
+            
+            struct FriendProto tempFrnd;
+            ifstream frnd("Friends.bin",ios::binary);
+            ofstream frnd2("new.bin",ios::binary);
+
+            while(frnd.read((char*)&tempFrnd,sizeof(tempFrnd))){
+                if(tempFrnd.id >= n) tempFrnd.id--;
+                if(strcmp(tempFrnd.signature,obj.GetEmail()) != 0 && tempFrnd.id != (n - 1)) frnd2.write((char*)&tempFrnd,sizeof(tempFrnd));
+            }
+
+            frnd2.close();
+            frnd.close();
+
+            remove("Friends.bin");
+            val = rename("new.bin","Friends.bin");
+
+            Post tempP;
+            ifstream post("Posts.bin",ios::binary);
+            ofstream tempPost("TempP.bin",ios::binary);
+
+            while(post.read((char*)&tempP,sizeof(tempP))){
+                if(strcmp(tempP.GetSignature(),obj.GetEmail()) != 0) tempPost.write((char*)&tempP,sizeof(tempP));
+            }
+            
+            tempPost.close();
+            post.close();
 			
+            remove("Posts.bin");
+            val = rename("TempP.bin","Posts.bin");
+
 		}
+
 			return deleted;
 
 	}
