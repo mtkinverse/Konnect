@@ -897,7 +897,6 @@ class Simulate{
 
         while(file2.read((char*)&tempF,sizeof(tempF))){
             n=0;
-            cout << tempF.signature << " " << tempF.id << " ";
             temp.SetEmail(tempF.signature);
             checkUser(temp,n);
             graph.ConnectNodes(n-1,tempF.id);
@@ -951,8 +950,7 @@ class Simulate{
         int id1 = n - 1;
         n=0;
         checkUser(user,n); // getting the id of the user
-        cout << " Let's check "<<n<<" "<<id1;
-
+       
         if(graph.IsFriend(n-1,id1))
             cout << "\nYou are already friends !\n";        
         else{
@@ -961,7 +959,10 @@ class Simulate{
             // cin >> num;
             num = getc(stdin);
 
-            if(num == '1') MakeFriend(n-1,id1);
+            if(num == '1'){
+                MakeFriend(n-1,id1);
+                cout << " -- You guys are now friends !\n";
+            }
 
         }
 
@@ -994,6 +995,7 @@ class Simulate{
                     break;
 
                 default: cout << "\nKindly be precised while selecting the options !\n\n";
+                         system("pause");
             }
         }
 
@@ -1028,7 +1030,7 @@ PrintHeader();
 		fflush(stdin);
 		cin >> ch;
 
-		if ( ch == 'E')exit(0);
+		if ( ch == 'E') return;
 
 		fflush(stdin);
 		fflush(stdin);
@@ -1080,8 +1082,9 @@ PrintHeader();
 
 	system("pause");
     
-    graph.AddNode(new User((char*)temp.GetName(),(char*)temp.GetPassword(),(char*)temp.GetEmail()));
-    return ShowMenu(temp);
+    if(n == 1) return AdminPortal();
+    // graph.AddNode(new User((char*)temp.GetName(),(char*)temp.GetPassword(),(char*)temp.GetEmail()));
+    else return ShowMenu(temp);
 
 }
     
@@ -1432,6 +1435,126 @@ bool deleteUser(const User& obj) {
 			return deleted;
 
 	}
+
+void AdminPortal(){
+        int opt,n=0;
+        char email[30],new_Name[30],new_Pass[30],new_Email[30];
+
+        while(opt!=5){
+            
+            PrintHeader();
+            
+            cout << "Admin access\n\n";
+            cout<< "1 Update a user\n";
+            cout<< "2 delete a user\n";
+            cout<< "3 Show all users\n";
+            cout<< "4 View post by a user\n";
+            cout<< "5 exit\n";
+            cin >> opt;
+            if(opt==5) return;
+            
+
+            while(opt!=1 && opt!= 2 && opt!=3 && opt!= 4 && opt!= 5){
+            cout << "Choose a valid option\n\n";
+            cout<< "1 Update a user\n";
+            cout<< "2 delete a user\n";
+            cout<< "3 Show all users\n";
+            cout<< "4 View post by a user\n";
+            cout<< "5 exit\n";
+            cin >> opt;
+            if(opt==5) return;
+            }
+            if(opt==1){
+                cout << "Enter the email of the user you want to update: ";
+                fflush(stdin);
+                fflush(stdin);
+                fgets(blank,30,stdin);
+                fgets(email,30,stdin);
+                User temp;
+                temp.SetEmail(email);
+                if(checkUser(temp,n)){
+                    ifstream file("UserData.bin", ios::binary);
+                    file.seekg((n-1) * sizeof(User));
+			        file.read((char*)&temp, sizeof(User));
+                    UpdateAccount(temp);
+                }
+                else{
+                    cout << "User not found\n";
+                }
+            }
+            else if(opt==2){
+
+                cout << "Enter the email of the user you want to delete: ";
+                fflush(stdin);
+                fflush(stdin);
+                fgets(blank,30,stdin);
+                fgets(email,30,stdin);
+                
+                User temp;
+                temp.SetEmail(email);
+
+                if(checkUser(temp,n)){
+
+                    ifstream file("UserData.bin",ios::binary);
+                    
+                    file.seekg((n-1)*sizeof(User));
+                    file.read((char*)&temp,sizeof(temp));
+                    
+                    file.close();
+                    if(deleteUser(temp)){
+                        
+                        cout << "\n User deleted successfully\npress any key to return\n";
+                        // if(fgetc(stdin)) return;
+
+                    }
+                    else{
+                        cout << "Error try again\n";
+                    }
+                }
+                else{
+                    cout << "User not found\n";
+                }
+
+            }
+            else if(opt==3){
+
+                cout << endl;
+                ifstream file("UserData.bin", ios::binary);
+                User temp;
+                while (file.read((char*)&temp, sizeof(User))) {
+                    cout << "Name: "<< temp.GetName();
+                    cout << "Email: "<< temp.GetEmail();
+                    cout << endl;
+                }
+                file.close();
+
+            }
+            else if(opt==4){
+
+                cout << "Enter the ID of the user: ";
+                fflush(stdin);
+                fflush(stdin);
+                fgets(blank,30,stdin);
+                fgets(email,30,stdin);
+                User temp;
+                temp.SetEmail(email);
+                if(checkUser(temp,n)){
+                    
+                    temp.GetHistory().UpdateHistory(temp.GetEmail());
+                    temp.GetHistory().PrintAllPosts(temp.GetEmail());
+
+                }
+                else{
+                    cout << "Error try again\n";
+                }
+            }
+            else{
+                    cout << "User not found\n";
+            }
+
+            system("pause");
+        }
+    }
 
 };
 
