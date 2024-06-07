@@ -1,6 +1,3 @@
-/a.exe
-/LastId.txt
-/UserData.bin
-/Posts.bin
-/Posts.txt
-/Friends.bin
+*.exe
+*.txt
+*.bin
